@@ -4,11 +4,24 @@ from tkinter import *
 from tkinter import font
 from PIL import Image, ImageTk
 from io import BytesIO
+
+import tkinter as tk
+import tkinter.ttk as ttk
+from tkinter import *
+from tkinter import font
+import requests
+import xml.etree.ElementTree as ET
+from PIL import Image, ImageTk
+from io import BytesIO
+import webbrowser
+from googlemaps import Client
 import webbrowser
 # 경기도 지하수 관련 데이터 API
 url = "https://openapi.gg.go.kr/UndergroundWaterConstruct"
 service_key = "261b0fd0fad14a3ba3482ed8cceae48d"
 
+Google_API_Key = 'AIzaSyCzFgc9OGnXckq1-JNhSCVGo9zIq1kSWcE'
+gmaps = Client(key=Google_API_Key)
 # 지역코드
 SGGUCD = [
     ['41210', '광명시'],
@@ -44,6 +57,7 @@ def SearchButtonAction():
     sgguCD = get_sgguCD(city_name)
     if sgguCD:
         Search(sgguCD)
+        update_map(city_name)
     else:
         RenderText.insert(INSERT, "해당 시를 찾을 수 없습니다.")
 
@@ -191,11 +205,37 @@ def get_parking_lot_count(city_code):
         return sum(1 for _ in tree.iter("row"))
     return 0
 
+def update_map(city_name):
+    global zoom
+    city_center = gmaps.geocode(f"{city_name} 경기도")[0]['geometry']['location']
+    city_map_url = f"https://maps.googleapis.com/maps/api/staticmap?center={city_center['lat']},{city_center['lng']}&zoom=13&size=400x400&maptype=roadmap"
+
+    # 선택한 시의 주차장 위치 마커 추가
+    for _, _, _, _, lat, lng in DataList:
+        if lat and lng:
+            city_map_url += f"&markers=color:red%7C{lat},{lng}"
+
+    city_map_url += f"&key={Google_API_Key}"
+
+    response = requests.get(city_map_url)
+    img_data = response.content
+    img = Image.open(BytesIO(img_data))
+    img = ImageTk.PhotoImage(img)
+
+
+    map_label.configure(image=img)
+    map_label.image = img
+
 InitRenderGraph()
 InitTopText()
 InitSearchEntry()
 InitSearchButton()
 InitRenderText()
+
+map_label = Label(g_Tk)
+
+map_label.pack()
+map_label.place(x=270, y=20)
 
 
 g_Tk.mainloop()
