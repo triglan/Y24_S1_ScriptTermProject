@@ -1,21 +1,10 @@
-import requests
-import xml.etree.ElementTree as ET
-from tkinter import *
-from tkinter import font
-from PIL import Image, ImageTk
-from io import BytesIO
-
-import tkinter as tk
-import tkinter.ttk as ttk
 from tkinter import *
 from tkinter import font
 import requests
 import xml.etree.ElementTree as ET
 from PIL import Image, ImageTk
 from io import BytesIO
-import webbrowser
 from googlemaps import Client
-import webbrowser
 # 경기도 지하수 관련 데이터 API
 url = "https://openapi.gg.go.kr/UndergroundWaterConstruct"
 service_key = "261b0fd0fad14a3ba3482ed8cceae48d"
@@ -158,7 +147,7 @@ def InitSearchEntry():
 def InitRenderGraph():
     # 캔버스 생성
     canvas = Canvas(g_Tk, width=300, height=250, bg='white')
-    canvas.place(x=270, y=320)
+    canvas.place(x=270, y=350)
 
     # 각 시별 주차장 개수를 가져오기
     city_names = [city[1] for city in SGGUCD]
@@ -222,9 +211,13 @@ def update_map(city_name):
     img = Image.open(BytesIO(img_data))
     img = ImageTk.PhotoImage(img)
 
-
+    map_label = Label(g_Tk, width=300, height=300, bg='white')
+    map_label.pack()
+    map_label.place(x=270, y=45)
     map_label.configure(image=img)
     map_label.image = img
+
+
 
 InitRenderGraph()
 InitTopText()
@@ -232,10 +225,7 @@ InitSearchEntry()
 InitSearchButton()
 InitRenderText()
 
-map_label = Label(g_Tk)
 
-map_label.pack()
-map_label.place(x=270, y=20)
 
 
 g_Tk.mainloop()
