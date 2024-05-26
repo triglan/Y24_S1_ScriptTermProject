@@ -11,11 +11,12 @@ g_Tk = Tk()
 g_Tk.geometry("800x600+100+100")
 
 # Google Maps API Key
-Google_API_Key = 'AIzaSyCzFgc9OGnXckq1-JNhSCVGo9zIq1kSWcE'
+Google_API_Key = 'AIzaSyCzFgc9OGnXckq1-JNhSCVGo9zIq1kSWcE'  # 여기에 실제 API 키를 입력하세요.
 gmaps = Client(key=Google_API_Key)
 
 # 데이터 리스트 초기화
 DataList = []
+selected_parking_index = None
 
 
 def InitTopText():
@@ -33,6 +34,8 @@ def InitSearchButton():
 
 
 def on_click(event):
+    global selected_parking_index
+
     # 모든 태그의 배경 색을 기본값으로 되돌림
     for i in range(len(DataList)):
         tag_name = f'tag{i + 1}'
@@ -44,6 +47,9 @@ def on_click(event):
     for tag in tag_ranges:
         if tag.startswith('tag'):
             RenderText.tag_config(tag, background='gray')
+            selected_parking_index = int(tag[3:]) - 1  # 선택한 주차장 인덱스 저장
+            update_map(SearchEntry.get())
+            break
 
 
 def SearchButtonAction():
@@ -114,7 +120,6 @@ def SearchButtonAction():
         RenderText.insert(INSERT, "\n\n", tag_name)
 
     RenderText.configure(state='disabled')
-    SearchEntry.delete(0, END)
     update_map(city_name)
 
 
@@ -147,16 +152,20 @@ def update_map(city_name):
     global DataList
     global Google_API_Key
     global gmaps
+    global selected_parking_index
 
     city_center = gmaps.geocode(f"{city_name} 경기도")[0]['geometry']['location']
     city_map_url = f"https://maps.googleapis.com/maps/api/staticmap?center={city_center['lat']},{city_center['lng']}&zoom=13&size=500x500&maptype=roadmap"
 
     # 선택한 시의 주차장 위치 마커 추가
-    for info in DataList:
+    for i, info in enumerate(DataList):
         try:
             lat, lng = float(info[-2]), float(info[-1])  # 위도와 경도 추출
             if lat and lng:
-                city_map_url += f"&markers=color:red%7C{lat},{lng}"
+                if i == selected_parking_index:
+                    city_map_url += f"&markers=color:green%7C{lat},{lng}"
+                else:
+                    city_map_url += f"&markers=color:red%7C{lat},{lng}"
         except ValueError:
             # "혼합"과 같은 문자열이 포함된 경우, 해당 주차장 정보를 건너뜁니다.
             continue
