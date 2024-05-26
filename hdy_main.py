@@ -6,11 +6,17 @@ from PIL import Image, ImageTk
 from io import BytesIO
 from googlemaps import Client
 
+# Tkinter 초기화
 g_Tk = Tk()
 g_Tk.geometry("800x600+100+100")
-DataList = []
+
+# Google Maps API Key
 Google_API_Key = 'AIzaSyCzFgc9OGnXckq1-JNhSCVGo9zIq1kSWcE'
 gmaps = Client(key=Google_API_Key)
+
+# 데이터 리스트 초기화
+DataList = []
+
 def InitTopText():
     TempFont = font.Font(g_Tk, size=20, weight='bold', family='Consolas')
     MainText = Label(g_Tk, font=TempFont, text="[경기도 주차장 정보 검색]")
@@ -22,8 +28,6 @@ def InitSearchButton():
     SearchButton = Button(g_Tk, font=TempFont, text="검색", command=SearchButtonAction)
     SearchButton.pack()
     SearchButton.place(x=160, y=90)
-
-RenderText = None
 
 def SearchButtonAction():
     DataList.clear()
@@ -52,7 +56,7 @@ def SearchButtonAction():
         # 주소에서 도시 이름 추출
         address_parts = LOCPLC_ROADNM_ADDR.split(' ')
         if len(address_parts) > 1:
-            extracted_city = address_parts[1]  # 도시 이름은 주소에서 두 번째 요소로 가정합니다
+            extracted_city = address_parts[1]  # 도시 이름은 주소에서 두 번째 요소로 가정
             # 추출된 도시 이름과 사용자 입력 비교
             if extracted_city == city_name or extracted_city[:2] == city_name[:2]:
                 DataList.append((PARKPLC_NM, LOCPLC_ROADNM_ADDR, PARKNG_COMPRT_CNT, WKDAY_OPERT_BEGIN_TM, WKDAY_OPERT_END_TM, CHRG_INFO
@@ -93,6 +97,7 @@ def SearchButtonAction():
     RenderText.configure(state='disabled')
     SearchEntry.delete(0, END)
     update_map(city_name)
+
 def InitRenderText():
     global RenderText
 
@@ -142,15 +147,68 @@ def update_map(city_name):
 
     map_label = Label(g_Tk, width=300, height=300, bg='white')
     map_label.pack()
-    map_label.place(x=270, y=45)
+    map_label.place(x=250, y=45)
     map_label.configure(image=img)
     map_label.image = img
 
+def InitRenderGraph():
+    # 캔버스 생성
+    canvas = Canvas(g_Tk, width=300, height=250, bg='white')
+    canvas.place(x=250, y=350)
 
+    # 주차장 정보를 저장할 딕셔너리 초기화
+    parking_dic = {city: 0 for city in ['군포','양주', '수원', '안산', '오산', '의왕', '광명', '성남',]}
+
+    # 파일에서 XML 데이터를 읽어옴
+    tree = ET.parse('api.xml')
+    root = tree.getroot()
+
+    # 해당 지역의 주차장 정보 가져오기
+    for item in root.findall(".//row"):
+        LOCPLC_ROADNM_ADDR = item.findtext("LOCPLC_ROADNM_ADDR")
+        if LOCPLC_ROADNM_ADDR:
+            # 주소에서 도시 이름 추출
+            address_parts = LOCPLC_ROADNM_ADDR.split(' ')
+            if len(address_parts) > 1:
+                extracted_city = address_parts[1]  # 도시 이름은 주소에서 두 번째 요소로 가정
+                # 추출된 도시 이름과 사용자 입력 비교
+                for city in parking_dic:
+                    if extracted_city.startswith(city[:2]):
+                        parking_dic[city] += 1
+
+    # 최대 주차장 개수 계산
+    max_count = max(parking_dic.values())
+
+    # 그래프 영역 크기 계산
+    graph_width = 280
+    graph_height = 200
+    bar_width = graph_width / len(parking_dic)
+    bar_gap = 10
+    bar_color = 'blue'
+
+    # 막대 그래프 그리기
+    for i, (city, count) in enumerate(parking_dic.items()):
+        bar_height = (count / max_count) * (graph_height - 20)
+        x0 = i * bar_width + bar_gap
+        y0 = graph_height
+        x1 = (i + 1) * bar_width - bar_gap
+        y1 = graph_height - bar_height
+        canvas.create_rectangle(x0, y0, x1, y1, fill=bar_color)
+        canvas.create_text((x0 + x1) / 2, y1 - 10, text=count, anchor='n')
+        canvas.create_text((x0 + x1) / 2, y0 + 10, text=city, anchor='n')
+
+    # 그래프 축과 레이블 그리기
+    canvas.create_line(bar_gap, graph_height, graph_width - bar_gap, graph_height)
+    canvas.create_line(bar_gap, graph_height, bar_gap, 0)
+    canvas.create_text(graph_width / 2, graph_height + 40, text='City', anchor='s')
+    canvas.create_text(bar_gap / 2, graph_height / 2, text='Count', anchor='center', angle=90)
+
+# 초기화 함수 호출
 InitTopText()
 InitSearchEntry()
 InitSearchButton()
 InitRenderText()
-
+update_map('경기')
+InitRenderGraph()
 
 g_Tk.mainloop()
