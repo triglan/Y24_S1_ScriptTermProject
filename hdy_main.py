@@ -1,11 +1,16 @@
 from tkinter import *
 from tkinter import font
+import requests
 import xml.etree.ElementTree as ET
+from PIL import Image, ImageTk
+from io import BytesIO
+from googlemaps import Client
 
 g_Tk = Tk()
 g_Tk.geometry("800x600+100+100")
 DataList = []
-
+Google_API_Key = 'AIzaSyCzFgc9OGnXckq1-JNhSCVGo9zIq1kSWcE'
+gmaps = Client(key=Google_API_Key)
 def InitTopText():
     TempFont = font.Font(g_Tk, size=20, weight='bold', family='Consolas')
     MainText = Label(g_Tk, font=TempFont, text="[경기도 주차장 정보 검색]")
@@ -41,6 +46,8 @@ def SearchButtonAction():
         CONTCT_NO = item.findtext("CONTCT_NO")
         SPCLABLT_MATR = item.findtext("SPCLABLT_MATR")
         SETTLE_METH = item.findtext("SETTLE_METH")
+        REFINE_WGS84_LAT = item.findtext("REFINE_WGS84_LAT")
+        REFINE_WGS84_LOGT = item.findtext("REFINE_WGS84_LOGT")
 
         # 주소에서 도시 이름 추출
         address_parts = LOCPLC_ROADNM_ADDR.split(' ')
@@ -48,7 +55,8 @@ def SearchButtonAction():
             extracted_city = address_parts[1]  # 도시 이름은 주소에서 두 번째 요소로 가정합니다
             # 추출된 도시 이름과 사용자 입력 비교
             if extracted_city == city_name or extracted_city[:2] == city_name[:2]:
-                DataList.append((PARKPLC_NM, LOCPLC_ROADNM_ADDR, PARKNG_COMPRT_CNT, WKDAY_OPERT_BEGIN_TM, WKDAY_OPERT_END_TM, CHRG_INFO, CONTCT_NO, SPCLABLT_MATR, SETTLE_METH))
+                DataList.append((PARKPLC_NM, LOCPLC_ROADNM_ADDR, PARKNG_COMPRT_CNT, WKDAY_OPERT_BEGIN_TM, WKDAY_OPERT_END_TM, CHRG_INFO
+                                 , CONTCT_NO, SPCLABLT_MATR, SETTLE_METH,REFINE_WGS84_LAT,REFINE_WGS84_LOGT))
 
     # 필터링된 주차장 정보 표시
     for i in range(len(DataList)):
@@ -84,7 +92,7 @@ def SearchButtonAction():
 
     RenderText.configure(state='disabled')
     SearchEntry.delete(0, END)
-
+    update_map(city_name)
 def InitRenderText():
     global RenderText
 
@@ -107,10 +115,37 @@ def InitSearchEntry():
     SearchEntry = Entry(g_Tk, fg="black")
     SearchEntry.place(x=10, y=110)
 
+def update_map(city_name):
+    global DataList
+    global Google_API_Key
+    global gmaps
 
-def update_map():
-    # 여기에 Google 지도 업데이트 코드 추가
-    pass
+    city_center = gmaps.geocode(f"{city_name} 경기도")[0]['geometry']['location']
+    city_map_url = f"https://maps.googleapis.com/maps/api/staticmap?center={city_center['lat']},{city_center['lng']}&zoom=13&size=500x500&maptype=roadmap"
+
+    # 선택한 시의 주차장 위치 마커 추가
+    for info in DataList:
+        try:
+            lat, lng = float(info[-2]), float(info[-1])  # 위도와 경도 추출
+            if lat and lng:
+                city_map_url += f"&markers=color:red%7C{lat},{lng}"
+        except ValueError:
+            # "혼합"과 같은 문자열이 포함된 경우, 해당 주차장 정보를 건너뜁니다.
+            continue
+
+    city_map_url += f"&key={Google_API_Key}"
+
+    response = requests.get(city_map_url)
+    img_data = response.content
+    img = Image.open(BytesIO(img_data))
+    img = ImageTk.PhotoImage(img)
+
+    map_label = Label(g_Tk, width=300, height=300, bg='white')
+    map_label.pack()
+    map_label.place(x=270, y=45)
+    map_label.configure(image=img)
+    map_label.image = img
+
 
 InitTopText()
 InitSearchEntry()
