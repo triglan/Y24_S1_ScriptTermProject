@@ -18,6 +18,8 @@ gmaps = Client(key=Google_API_Key)
 DataList = []
 selected_parking_index = None
 
+free_parking_var = BooleanVar()
+paid_parking_var = BooleanVar()
 
 def InitTopText():
     TempFont = font.Font(g_Tk, size=20, weight='bold', family='Consolas')
@@ -57,15 +59,16 @@ def SearchButtonAction():
     RenderText.configure(state='normal')
     RenderText.delete(0.0, END)
     city_name = SearchEntry.get()
-    print(city_name)
     # 파일에서 XML 데이터를 읽어옴
-    tree = ET.parse('api.xml')
+    tree = ET.parse('주차장정보현황.xml')
     root = tree.getroot()
 
+    free_parking = free_parking_var.get()
+    paid_parking = paid_parking_var.get()
     # 해당 지역의 주차장 정보 가져오기
     for item in root.findall(".//row"):
         PARKPLC_NM = item.findtext("PARKPLC_NM")
-        LOCPLC_ROADNM_ADDR = item.findtext("LOCPLC_ROADNM_ADDR")
+        LOCPLC_LOTNO_ADDR = item.findtext("LOCPLC_LOTNO_ADDR")
         PARKNG_COMPRT_CNT = item.findtext("PARKNG_COMPRT_CNT")
         WKDAY_OPERT_BEGIN_TM = item.findtext("WKDAY_OPERT_BEGIN_TM")
         WKDAY_OPERT_END_TM = item.findtext("WKDAY_OPERT_END_TM")
@@ -77,14 +80,45 @@ def SearchButtonAction():
         REFINE_WGS84_LOGT = item.findtext("REFINE_WGS84_LOGT")
 
         # 주소에서 도시 이름 추출
-        address_parts = LOCPLC_ROADNM_ADDR.split(' ')
-        if len(address_parts) > 1:
-            extracted_city = address_parts[1]  # 도시 이름은 주소에서 두 번째 요소로 가정
-            # 추출된 도시 이름과 사용자 입력 비교
-            if extracted_city == city_name or extracted_city[:2] == city_name[:2]:
-                DataList.append((PARKPLC_NM, LOCPLC_ROADNM_ADDR, PARKNG_COMPRT_CNT, WKDAY_OPERT_BEGIN_TM,
-                                 WKDAY_OPERT_END_TM, CHRG_INFO
-                                 , CONTCT_NO, SPCLABLT_MATR, SETTLE_METH, REFINE_WGS84_LAT, REFINE_WGS84_LOGT))
+
+        if city_name==LOCPLC_LOTNO_ADDR:
+            if free_parking and not paid_parking:
+                if CHRG_INFO == "무료":
+                    DataList.append((PARKPLC_NM, LOCPLC_LOTNO_ADDR, PARKNG_COMPRT_CNT, WKDAY_OPERT_BEGIN_TM,
+                                     WKDAY_OPERT_END_TM, CHRG_INFO, CONTCT_NO, SPCLABLT_MATR, SETTLE_METH,
+                                     REFINE_WGS84_LAT, REFINE_WGS84_LOGT))
+            elif paid_parking and not free_parking:
+                if CHRG_INFO != "무료":
+                    DataList.append((PARKPLC_NM, LOCPLC_LOTNO_ADDR, PARKNG_COMPRT_CNT, WKDAY_OPERT_BEGIN_TM,
+                                     WKDAY_OPERT_END_TM, CHRG_INFO, CONTCT_NO, SPCLABLT_MATR, SETTLE_METH,
+                                     REFINE_WGS84_LAT, REFINE_WGS84_LOGT))
+            else:
+                DataList.append((PARKPLC_NM, LOCPLC_LOTNO_ADDR, PARKNG_COMPRT_CNT, WKDAY_OPERT_BEGIN_TM,
+                                 WKDAY_OPERT_END_TM, CHRG_INFO, CONTCT_NO, SPCLABLT_MATR, SETTLE_METH,
+                                 REFINE_WGS84_LAT, REFINE_WGS84_LOGT))
+        else:
+            address_parts = LOCPLC_LOTNO_ADDR.split(' ')
+            if len(address_parts) > 1:
+                extracted_city = address_parts[1]  # 도시 이름은 주소에서 두 번째 요소로 가정
+                # 추출된 도시 이름과 사용자 입력 비교
+                if extracted_city == city_name or extracted_city[:2] == city_name[:2]:
+                    if free_parking and not paid_parking:
+                        if CHRG_INFO == "무료":
+                            DataList.append((PARKPLC_NM, LOCPLC_LOTNO_ADDR, PARKNG_COMPRT_CNT, WKDAY_OPERT_BEGIN_TM,
+                                             WKDAY_OPERT_END_TM, CHRG_INFO, CONTCT_NO, SPCLABLT_MATR, SETTLE_METH,
+                                             REFINE_WGS84_LAT, REFINE_WGS84_LOGT))
+                    elif paid_parking and not free_parking:
+                        if CHRG_INFO != "무료":
+                            DataList.append((PARKPLC_NM, LOCPLC_LOTNO_ADDR, PARKNG_COMPRT_CNT, WKDAY_OPERT_BEGIN_TM,
+                                             WKDAY_OPERT_END_TM, CHRG_INFO, CONTCT_NO, SPCLABLT_MATR, SETTLE_METH,
+                                             REFINE_WGS84_LAT, REFINE_WGS84_LOGT))
+                    else:
+                        DataList.append((PARKPLC_NM, LOCPLC_LOTNO_ADDR, PARKNG_COMPRT_CNT, WKDAY_OPERT_BEGIN_TM,
+                                         WKDAY_OPERT_END_TM, CHRG_INFO, CONTCT_NO, SPCLABLT_MATR, SETTLE_METH,
+                                         REFINE_WGS84_LAT, REFINE_WGS84_LOGT))
+
+
+
 
     # 필터링된 주차장 정보 표시
     for i in range(len(DataList)):
@@ -146,7 +180,11 @@ def InitSearchEntry():
     Label(g_Tk, text="<검색할 시 이름>", fg="black", font=("Helvetica", 12)).place(x=10, y=90)
     SearchEntry = Entry(g_Tk, fg="black")
     SearchEntry.place(x=10, y=110)
+    free_parking_check = Checkbutton(g_Tk, text="무료", variable=free_parking_var)
+    free_parking_check.place(x=10, y=60)
 
+    paid_parking_check = Checkbutton(g_Tk, text="유료", variable=paid_parking_var)
+    paid_parking_check.place(x=70, y=60)
 
 def update_map(city_name):
     global DataList
@@ -190,18 +228,19 @@ def InitRenderGraph():
     canvas.place(x=260, y=350)
 
     # 주차장 정보를 저장할 딕셔너리 초기화
-    parking_dic = {city: 0 for city in ['양주', '수원', '안산', '오산', '의왕', '광명', '성남']}
+    parking_dic = {city: 0 for city in ['양주', '수원', '안산', '오산', '의왕'
+        , '광명', '성남','부천','남양주','시흥','가평']}
 
     # 파일에서 XML 데이터를 읽어옴
-    tree = ET.parse('api.xml')
+    tree = ET.parse('주차장정보현황.xml')
     root = tree.getroot()
 
     # 해당 지역의 주차장 정보 가져오기
     for item in root.findall(".//row"):
-        LOCPLC_ROADNM_ADDR = item.findtext("LOCPLC_ROADNM_ADDR")
-        if LOCPLC_ROADNM_ADDR:
+        LOCPLC_LOTNO_ADDR = item.findtext("LOCPLC_LOTNO_ADDR")
+        if LOCPLC_LOTNO_ADDR:
             # 주소에서 도시 이름 추출
-            address_parts = LOCPLC_ROADNM_ADDR.split(' ')
+            address_parts = LOCPLC_LOTNO_ADDR.split(' ')
             if len(address_parts) > 1:
                 extracted_city = address_parts[1]  # 도시 이름은 주소에서 두 번째 요소로 가정
                 # 추출된 도시 이름과 사용자 입력 비교
@@ -216,7 +255,7 @@ def InitRenderGraph():
     graph_width = 280
     graph_height = 200
     bar_width = graph_width / len(parking_dic)
-    bar_gap = 10
+    bar_gap = 5
     bar_color = 'blue'
 
     # 막대 그래프 그리기
