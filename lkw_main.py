@@ -198,10 +198,13 @@ def get_parking_lot_count(city_code):
 
 def send_action():
     global host, port
+
+    input_mailaddress()
+
     html = ""
-    title = str('TempTitle')
+    title = str('주차장 위치 정보 메일 전달 시스템')
     senderAddr = str('glanb4277@gmail.com')
-    recipientAddr = str('glan4277@naver.com')
+    recipientAddr = str('glanb4277@naver.com')
     msgtext = str('tempMessage')
     passwd = str('cbbmyxvpefzvgexb')
     msgtext = str('n')
@@ -233,10 +236,67 @@ def send_action():
     s.close()
 
     print("Mail sending complete!!!")
-    
+
+
+def input_mailaddress():
+    newWindow = Toplevel(g_Tk)
+    newWindow.title('메일 정보 입력')
+    newWindow.geometry("400x300")
+
+    Label(newWindow, text="받는 사람 이메일", font=("Helvetica", 12)).pack(pady=5)
+    recipient_entry = Entry(newWindow, fg="black", font=("Helvetica", 12))
+    recipient_entry.pack(pady=5)
+
+    def submit_email():
+        recipient = recipient_entry.get()
+        send_email(recipient)
+        newWindow.destroy()
+
+    Button(newWindow, text="전송", command=submit_email, font=("Helvetica", 12)).pack(pady=20)
+
+
+def send_email(recipient):
+    global host, port
+
+    input_mailaddress()
+
+    html = ""
+    title = str('주차장 위치 정보 메일 전달 시스템')
+    senderAddr = str('glanb4277@gmail.com')
+    recipientAddr = str(recipient)
+    passwd = str('cbbmyxvpefzvgexb')
+    msgtext = str('n')
+
+    import mysmtplib
+    # MIMEMultipart의 MIME을 생성합니다.
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+
+    # Message container를 생성합니다.
+    msg = MIMEMultipart('alternative')
+
+    # set message
+    msg['Subject'] = title
+    msg['From'] = senderAddr
+    msg['To'] = recipientAddr
+
+    msgPart = MIMEText(msgtext, 'plain')
+
+    # 메세지에 생성한 MIME 문서를 첨부합니다.
+    msg.attach(msgPart)
+    s = mysmtplib.MySMTP(host, port)
+    # s.set_debuglevel(1)
+    s.ehlo()
+    s.starttls()
+    s.ehlo()
+    s.login(senderAddr, passwd)  # 로긴을 합니다.
+    s.sendmail(senderAddr, [recipientAddr], msg.as_string())
+    s.close()
+
+    print("Mail sending complete!!!")
 def mail_button():#++
     MailImage = PhotoImage(file="Gmail.png")  # 이미지 파일 경로 설정
-    MailButton = Button(g_Tk, image=MailImage, command=send_action)
+    MailButton = Button(g_Tk, image=MailImage, command=input_mailaddress)
     MailButton.image = MailImage  # 이미지 참조 유지
     MailButton.pack()
     MailButton.place(x=125, y=500)
