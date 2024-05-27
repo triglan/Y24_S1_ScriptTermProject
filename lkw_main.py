@@ -5,6 +5,7 @@ import xml.etree.ElementTree as ET
 from PIL import Image, ImageTk
 from io import BytesIO
 from googlemaps import Client
+from tkinter import messagebox
 
 # Tkinter 초기화
 g_Tk = Tk()
@@ -26,6 +27,10 @@ host = "smtp.gmail.com" # Gmail SMTP 서버 주소.
 port = "587"
 #주차장 정보 저장
 parking_palace_info = str('')
+#++ 북마크 정보 저장
+Bookmarks = []
+#북마크 검색 버튼 토글
+showBookmarksFlag = False
 
 def InitTopText():
     TempFont = font.Font(g_Tk, size=20, weight='bold', family='Consolas')
@@ -163,6 +168,12 @@ def SearchButtonAction():
     RenderText.configure(state='disabled')
     update_map(city_name)
 
+def BookMarkButtonAction():
+    global selected_parking_index
+    if selected_parking_index is not None:
+        selected_parking_info = DataList[selected_parking_index]
+        Bookmarks.append(selected_parking_info)
+
 
 def InitRenderText():
     global RenderText
@@ -192,6 +203,7 @@ def InitSearchEntry():
 
     paid_parking_check = Checkbutton(g_Tk, text="유료", variable=paid_parking_var)
     paid_parking_check.place(x=70, y=60)
+
 
 def update_map(city_name):
     global DataList
@@ -350,12 +362,69 @@ def mail_button():#++
     MailButton.pack()
     MailButton.place(x=125, y=500)
 
-def bookMark_button():#++
+def showBookMark_button():#++
     BookMarkImage = PhotoImage(file="Bookmark.png")  # 이미지 파일 경로 설정
-    BookMarkButton = Button(g_Tk, image=BookMarkImage, command=SearchButtonAction)#TODO : 즐겨찾기 액션
+    BookMarkButton = Button(g_Tk, image=BookMarkImage, command=showBookMark)#TODO : 즐겨찾기 액션
     BookMarkButton.image = BookMarkImage  # 이미지 참조 유지
     BookMarkButton.pack()
     BookMarkButton.place(x=25, y=500)
+
+def addBookMark_button():#++
+    BookMarkImage = PhotoImage(file="BookmarkPlus.png")  # 이미지 파일 경로 설정
+    BookMarkButton = Button(g_Tk, image=BookMarkImage, command=BookMarkButtonAction)  # TODO : 즐겨찾기 액션
+    BookMarkButton.image = BookMarkImage  # 이미지 참조 유지
+    BookMarkButton.pack()
+    BookMarkButton.place(x=235, y=300)
+
+def showBookMark():#++
+    global RenderText, showBookmarksFlag
+    RenderText.configure(state='normal')
+    RenderText.delete(0.0, END)
+
+    if showBookmarksFlag:
+        # Show search results screen
+        showBookmarksFlag = False
+        SearchButtonAction()
+    else:
+        # Show bookmarks screen
+        if Bookmarks:
+            for i, info in enumerate(Bookmarks):
+                tag_name = f'tagBM{i + 1}'
+                RenderText.insert(INSERT, "[", tag_name)
+                RenderText.insert(INSERT, i + 1, tag_name)
+                RenderText.insert(INSERT, "] ", tag_name)
+                RenderText.insert(INSERT, "주차장명: ", tag_name)
+                RenderText.insert(INSERT, info[0], tag_name)
+                RenderText.insert(INSERT, "\n", tag_name)
+                RenderText.insert(INSERT, "주소: ", tag_name)
+                RenderText.insert(INSERT, info[1], tag_name)
+                RenderText.insert(INSERT, "\n", tag_name)
+                RenderText.insert(INSERT, "주차구획수: ", tag_name)
+                RenderText.insert(INSERT, info[2], tag_name)
+                RenderText.insert(INSERT, "\n", tag_name)
+                RenderText.insert(INSERT, "운영시간: ", tag_name)
+                RenderText.insert(INSERT, info[3], tag_name)
+                RenderText.insert(INSERT, " - ", tag_name)
+                RenderText.insert(INSERT, info[4], tag_name)
+                RenderText.insert(INSERT, "\n", tag_name)
+                RenderText.insert(INSERT, "요금정보: ", tag_name)
+                RenderText.insert(INSERT, info[5], tag_name)
+                RenderText.insert(INSERT, "\n", tag_name)
+                RenderText.insert(INSERT, "전화번호: ", tag_name)
+                RenderText.insert(INSERT, info[6], tag_name)
+                RenderText.insert(INSERT, "\n", tag_name)
+                RenderText.insert(INSERT, "특이사항: ", tag_name)
+                RenderText.insert(INSERT, info[7], tag_name)
+                RenderText.insert(INSERT, "\n", tag_name)
+                RenderText.insert(INSERT, "결제방법: ", tag_name)
+                RenderText.insert(INSERT, info[8], tag_name)
+                RenderText.insert(INSERT, "\n\n", tag_name)
+        else:
+            RenderText.insert(INSERT, "No bookmarks to display.\n")
+        showBookmarksFlag = True
+
+    RenderText.configure(state='disabled')
+
 
 # 초기화 함수 호출
 InitTopText()
@@ -366,6 +435,7 @@ update_map('경기')
 InitRenderGraph()
 #메일 및 즐겨 찾기
 mail_button()
-bookMark_button()
+showBookMark_button()
+addBookMark_button()
 
 g_Tk.mainloop()
