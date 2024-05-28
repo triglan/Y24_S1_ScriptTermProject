@@ -10,6 +10,7 @@ from tkinter import messagebox
 # Tkinter 초기화
 g_Tk = Tk()
 g_Tk.geometry("800x600+100+100")
+g_Tk.title('주차장 위치 검색 서비스')
 
 # Google Maps API Key
 Google_API_Key = 'AIzaSyCzFgc9OGnXckq1-JNhSCVGo9zIq1kSWcE'  # 여기에 실제 API 키를 입력하세요.
