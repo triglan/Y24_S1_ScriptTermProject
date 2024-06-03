@@ -375,7 +375,7 @@ def addBookMark_button():#++
     BookMarkButton = Button(g_Tk, image=BookMarkImage, command=BookMarkButtonAction)  # TODO : 즐겨찾기 액션
     BookMarkButton.image = BookMarkImage  # 이미지 참조 유지
     BookMarkButton.pack()
-    BookMarkButton.place(x=235, y=300)
+    BookMarkButton.place(x=240, y=300)
 
 def showBookMark():#++
     global RenderText, showBookmarksFlag
