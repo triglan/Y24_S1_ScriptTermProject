@@ -5,6 +5,8 @@ import xml.etree.ElementTree as ET
 from PIL import Image, ImageTk
 from io import BytesIO
 from googlemaps import Client
+import subprocess
+
 
 # Tkinter 초기화
 g_Tk = Tk()
@@ -274,12 +276,23 @@ def InitRenderGraph():
     canvas.create_line(bar_gap, graph_height, bar_gap, 0)
     canvas.create_text(graph_width / 2, graph_height + 40, text='City', anchor='s')
     canvas.create_text(bar_gap / 2, graph_height / 2, text='Count', anchor='center', angle=90)
+def InitTelegramButton():
+    TempFont = font.Font(g_Tk, size=15, weight='bold', family='Consolas')
+    TelegramButton = Button(g_Tk, font=TempFont, text="텔레그램 실행", command=RunTelegramBot)
+    TelegramButton.pack()
+    TelegramButton.place(x=600, y=90)
 
+def RunTelegramBot():
+    try:
+        subprocess.Popen(['python', 'teller.py'])  # 윈도우 환경이라면 이 라인 사용
+    except Exception as e:
+        print(f"텔레그램 봇 실행 중 오류 발생: {e}")
 
 # 초기화 함수 호출
 InitTopText()
 InitSearchEntry()
 InitSearchButton()
+InitTelegramButton()
 InitRenderText()
 update_map('경기')
 InitRenderGraph()

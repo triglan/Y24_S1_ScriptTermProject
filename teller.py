@@ -107,12 +107,12 @@ def handle(msg):
                 return
         print(f'주차장 정보 요청: {location}, {charge_info}')
         reply_parking_data(chat_id, location, charge_info)
-    elif text.startswith('저장') and len(args) > 1:
-        print('try to 저장', args[1])
-        save(chat_id, args[1])
-    elif text.startswith('확인'):
-        print('try to 확인')
-        check(chat_id)
+    # elif text.startswith('저장') and len(args) > 1:
+    #     print('try to 저장', args[1])
+    #     save(chat_id, args[1])
+    # elif text.startswith('확인'):
+    #     print('try to 확인')
+    #     check(chat_id)
     else:
         send_message(chat_id, """모르는 명령어입니다.\n주차장 [지역명] [유료/무료]\n저장 [지역번호]\n확인 중 하나의 명령을 입력하세요.""")
 
