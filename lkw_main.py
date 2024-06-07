@@ -6,10 +6,12 @@ from PIL import Image, ImageTk
 from io import BytesIO
 from googlemaps import Client
 from tkinter import messagebox
+from spam import spam_max
 
 # Tkinter 초기화
 g_Tk = Tk()
 g_Tk.geometry("800x600+100+100")
+g_Tk.title('주차장 위치 검색 서비스')
 
 # Google Maps API Key
 Google_API_Key = 'AIzaSyCzFgc9OGnXckq1-JNhSCVGo9zIq1kSWcE'  # 여기에 실제 API 키를 입력하세요.
@@ -241,6 +243,8 @@ def update_map(city_name):
     map_label.image = img
 
 
+
+
 def InitRenderGraph():
     # 캔버스 생성
     canvas = Canvas(g_Tk, width=310, height=250, bg='white')
@@ -268,8 +272,9 @@ def InitRenderGraph():
                         parking_dic[city] += 1
 
     # 최대 주차장 개수 계산
-    max_count = max(parking_dic.values())
-
+    #max_count = max(parking_dic.values())
+    max_count = spam_max(parking_dic)
+    
     # 그래프 영역 크기 계산
     graph_width = 280
     graph_height = 200
