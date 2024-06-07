@@ -69,11 +69,13 @@ def check(user):
         row = f'id: {data[0]}, location: {data[1]}'
         send_message(user, row)
 
-def reply_parking_data(user, location):
+def reply_parking_data(user, location, charge_info=None):
     parking_data = get_parking_data()
     msg = ''
     for park in parking_data:
         if location in park['LOCPLC_LOTNO_ADDR']:
+            if charge_info and charge_info not in park['CHRG_INFO']:
+                continue
             row = f"{park['PARKPLC_NM']}, {park['LOCPLC_LOTNO_ADDR']}, {park['PARKNG_COMPRT_CNT']} spaces, {park['WKDAY_OPERT_BEGIN_TM']}-{park['WKDAY_OPERT_END_TM']} on weekdays, {park['CHRG_INFO']}, Contact: {park['CONTCT_NO']}\n"
             print(str(datetime.now()).split('.')[0], row)
             if len(row + msg) + 1 > MAX_MSG_LENGTH:
@@ -96,9 +98,15 @@ def handle(msg):
     args = text.split(' ')
 
     if text.startswith('주차장') and len(args) > 1:
-        location = ' '.join(args[1:])
-        print(f'주차장 정보 요청: {location}')
-        reply_parking_data(chat_id, location)
+        location = args[1]
+        charge_info = None
+        if len(args) > 2:
+            charge_info = args[2]
+            if charge_info not in ['유료', '무료']:
+                send_message(chat_id, '유료 또는 무료 중 하나를 입력하세요.')
+                return
+        print(f'주차장 정보 요청: {location}, {charge_info}')
+        reply_parking_data(chat_id, location, charge_info)
     elif text.startswith('저장') and len(args) > 1:
         print('try to 저장', args[1])
         save(chat_id, args[1])
@@ -106,7 +114,7 @@ def handle(msg):
         print('try to 확인')
         check(chat_id)
     else:
-        send_message(chat_id, """모르는 명령어입니다.\n주차장 [지역명]\n저장 [지역번호]\n확인 중 하나의 명령을 입력하세요.""")
+        send_message(chat_id, """모르는 명령어입니다.\n주차장 [지역명] [유료/무료]\n저장 [지역번호]\n확인 중 하나의 명령을 입력하세요.""")
 
 if __name__ == '__main__':
     today = date.today()
