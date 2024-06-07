@@ -6,90 +6,118 @@ import time
 import sqlite3
 import telepot
 from pprint import pprint
-from urllib.request import urlopen
-from bs4 import BeautifulSoup
-import re
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 import traceback
+import xml.etree.ElementTree as ET
 
-import noti
+# 텔레그램 봇 토큰
+TOKEN = '7247796214:AAG8jaf5pR50vl82zksQQZlEYxVEz48FQ1M'
+MAX_MSG_LENGTH = 300
+bot = telepot.Bot(TOKEN)
 
+def get_parking_data():
+    # XML 파일 파싱
+    tree = ET.parse('주차장정보현황.xml')
+    root = tree.getroot()
 
-def replyAptData(date_param, user, loc_param='11710'):
-    print(user, date_param, loc_param)
-    res_list = noti.getData( loc_param, date_param )
-    msg = ''
-    for r in res_list:
-        print( str(datetime.now()).split('.')[0], r )
-        if len(r+msg)+1>noti.MAX_MSG_LENGTH:
-            noti.sendMessage( user, msg )
-            msg = r+'\n'
-        else:
-            msg += r+'\n'
-    if msg:
-        noti.sendMessage( user, msg )
-    else:
-        noti.sendMessage( user, '%s 기간에 해당하는 데이터가 없습니다.'%date_param )
+    parking_data = []
 
-def save( user, loc_param ):
+    # 각 row에서 필요한 데이터 추출
+    for item in root.findall(".//row"):
+        data = {
+            "PARKPLC_NM": item.findtext("PARKPLC_NM"),
+            "LOCPLC_LOTNO_ADDR": item.findtext("LOCPLC_LOTNO_ADDR"),
+            "PARKNG_COMPRT_CNT": item.findtext("PARKNG_COMPRT_CNT"),
+            "WKDAY_OPERT_BEGIN_TM": item.findtext("WKDAY_OPERT_BEGIN_TM"),
+            "WKDAY_OPERT_END_TM": item.findtext("WKDAY_OPERT_END_TM"),
+            "CHRG_INFO": item.findtext("CHRG_INFO"),
+            "CONTCT_NO": item.findtext("CONTCT_NO"),
+            "SPCLABLT_MATR": item.findtext("SPCLABLT_MATR"),
+            "SETTLE_METH": item.findtext("SETTLE_METH"),
+            "REFINE_WGS84_LAT": item.findtext("REFINE_WGS84_LAT"),
+            "REFINE_WGS84_LOGT": item.findtext("REFINE_WGS84_LOGT")
+        }
+        parking_data.append(data)
+
+    return parking_data
+
+def send_message(user, msg):
+    try:
+        bot.sendMessage(user, msg)
+    except:
+        traceback.print_exc()
+
+def save(user, loc_param):
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
-    cursor.execute('CREATE TABLE IF NOT EXISTS users( user TEXT, location TEXT, PRIMARY KEY(user, location) )')
+    cursor.execute('CREATE TABLE IF NOT EXISTS users (user TEXT, location TEXT, PRIMARY KEY(user, location))')
     try:
-        cursor.execute('INSERT INTO users(user, location) VALUES ("%s", "%s")' % (user, loc_param))
+        cursor.execute('INSERT INTO users(user, location) VALUES (?, ?)', (user, loc_param))
     except sqlite3.IntegrityError:
-        noti.sendMessage( user, '이미 해당 정보가 저장되어 있습니다.' )
+        send_message(user, '이미 해당 정보가 저장되어 있습니다.')
         return
     else:
-        noti.sendMessage( user, '저장되었습니다.' )
+        send_message(user, '저장되었습니다.')
         conn.commit()
 
-def check( user ):
+def check(user):
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
-    cursor.execute('CREATE TABLE IF NOT EXISTS users( user TEXT, location TEXT, PRIMARY KEY(user, location) )')
-    cursor.execute('SELECT * from users WHERE user="%s"' % user)
+    cursor.execute('CREATE TABLE IF NOT EXISTS users (user TEXT, location TEXT, PRIMARY KEY(user, location))')
+    cursor.execute('SELECT * FROM users WHERE user=?', (user,))
     for data in cursor.fetchall():
-        row = 'id:' + str(data[0]) + ', location:' + data[1]
-        noti.sendMessage( user, row )
+        row = f'id: {data[0]}, location: {data[1]}'
+        send_message(user, row)
 
+def reply_parking_data(user, location):
+    parking_data = get_parking_data()
+    msg = ''
+    for park in parking_data:
+        if location in park['LOCPLC_LOTNO_ADDR']:
+            row = f"{park['PARKPLC_NM']}, {park['LOCPLC_LOTNO_ADDR']}, {park['PARKNG_COMPRT_CNT']} spaces, {park['WKDAY_OPERT_BEGIN_TM']}-{park['WKDAY_OPERT_END_TM']} on weekdays, {park['CHRG_INFO']}, Contact: {park['CONTCT_NO']}\n"
+            print(str(datetime.now()).split('.')[0], row)
+            if len(row + msg) + 1 > MAX_MSG_LENGTH:
+                send_message(user, msg)
+                msg = row + '\n'
+            else:
+                msg += row + '\n'
+    if msg:
+        send_message(user, msg)
+    else:
+        send_message(user, f'{location}에 해당하는 주차장 정보가 없습니다.')
 
 def handle(msg):
     content_type, chat_type, chat_id = telepot.glance(msg)
     if content_type != 'text':
-        noti.sendMessage(chat_id, '난 텍스트 이외의 메시지는 처리하지 못해요.')
+        send_message(chat_id, '난 텍스트 이외의 메시지는 처리하지 못해요.')
         return
 
     text = msg['text']
     args = text.split(' ')
 
-    if text.startswith('거래') and len(args)>1:
-        print('try to 거래', args[1])
-        replyAptData( args[1], chat_id, args[2] )
-    elif text.startswith('지역') and len(args)>1:
-        print('try to 지역', args[1])
-        replyAptData( '201801', chat_id, args[1] )
-    elif text.startswith('저장')  and len(args)>1:
+    if text.startswith('주차장') and len(args) > 1:
+        location = ' '.join(args[1:])
+        print(f'주차장 정보 요청: {location}')
+        reply_parking_data(chat_id, location)
+    elif text.startswith('저장') and len(args) > 1:
         print('try to 저장', args[1])
-        save( chat_id, args[1] )
+        save(chat_id, args[1])
     elif text.startswith('확인'):
         print('try to 확인')
-        check( chat_id )
+        check(chat_id)
     else:
-        noti.sendMessage(chat_id, """모르는 명령어입니다.\n거래 [YYYYMM] [지역번호] \n지역 [지역번호] \n저장 [지역번호] \n확인 중 하나의 명령을 입력하세요.\n    지역 ["종로구 11110", "중구 11140", "용산구 11170", "성동구 11200", "광진구 11215", "동대문구 11230", "중랑구 11260", "성북구 11290", "강북구 11305",     "도봉구 11320", "노원구 11350", "은평구 11380", "서대문구 11410", "마포구 11440", "양천구 11470", "강서구 11500", "구로구 11530", "금천구 11545",     "영등포구 11560", "동작구 11590", "관악구 11620", "서초구 11650", "강남구 11680", "송파구 11710", "강동구 11740"] """)
+        send_message(chat_id, """모르는 명령어입니다.\n주차장 [지역명]\n저장 [지역번호]\n확인 중 하나의 명령을 입력하세요.""")
 
+if __name__ == '__main__':
+    today = date.today()
+    current_month = today.strftime('%Y%m')
 
-today = date.today()
-current_month = today.strftime('%Y%m')
+    print('[', today, ']received token:', TOKEN)
+    pprint(bot.getMe())
 
-print( '[',today,']received token :', noti.TOKEN )
+    bot.message_loop(handle)
 
-bot = telepot.Bot(noti.TOKEN)
-pprint( bot.getMe() )
+    print('Listening...')
 
-bot.message_loop(handle)
-
-print('Listening...')
-
-while 1:
-  time.sleep(10)
+    while True:
+        time.sleep(10)
