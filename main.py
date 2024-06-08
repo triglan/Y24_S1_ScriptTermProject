@@ -11,7 +11,7 @@ import subprocess
 # Tkinter 초기화
 g_Tk = Tk()
 g_Tk.geometry("800x600+100+100")
-g_Tk.title('주차장 위치 검색 서비스')
+g_Tk.title('Parking Helper')
 
 # Google Maps API Key
 Google_API_Key = 'AIzaSyCzFgc9OGnXckq1-JNhSCVGo9zIq1kSWcE'  # 여기에 실제 API 키를 입력하세요.
@@ -268,8 +268,7 @@ def InitRenderGraph():
                     if extracted_city.startswith(city[:2]):
                         parking_dic[city] += 1
 
-    # 최대 주차장 개수 계산
-    # max_count = max(parking_dic.values())
+    # 지역별 주차장 개수 계산
     max_count = spam_max(parking_dic)
 
     # 그래프 영역 크기 계산
@@ -317,7 +316,7 @@ def input_mailaddress():
 def send_email(recipient):  # ++
     global host, port, parking_palace_info, selected_parking_index
 
-    title = str('주차장 위치 정보 메일 전달 시스템')
+    title = str('Parking Helper')
     senderAddr = str('glanb4277@gmail.com')
     recipientAddr = str(recipient)
     passwd = str('cbbmyxvpefzvgexb')
