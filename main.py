@@ -6,6 +6,7 @@ from PIL import Image, ImageTk
 from io import BytesIO
 from googlemaps import Client
 from tkinter import messagebox
+from spam import spam_max
 
 # Tkinter 초기화
 g_Tk = Tk()
@@ -24,14 +25,15 @@ free_parking_var = BooleanVar()
 paid_parking_var = BooleanVar()
 
 # smtp 정보 ++
-host = "smtp.gmail.com" # Gmail SMTP 서버 주소.
+host = "smtp.gmail.com"  # Gmail SMTP 서버 주소.
 port = "587"
-#주차장 정보 저장
+# 주차장 정보 저장
 parking_palace_info = str('')
-#++ 북마크 정보 저장
+# ++ 북마크 정보 저장
 Bookmarks = []
-#북마크 검색 버튼 토글
+# 북마크 검색 버튼 토글
 showBookmarksFlag = False
+
 
 def InitTopText():
     TempFont = font.Font(g_Tk, size=20, weight='bold', family='Consolas')
@@ -94,7 +96,7 @@ def SearchButtonAction():
 
         # 주소에서 도시 이름 추출
 
-        if city_name==LOCPLC_LOTNO_ADDR:
+        if city_name == LOCPLC_LOTNO_ADDR:
             if free_parking and not paid_parking:
                 if CHRG_INFO == "무료":
                     DataList.append((PARKPLC_NM, LOCPLC_LOTNO_ADDR, PARKNG_COMPRT_CNT, WKDAY_OPERT_BEGIN_TM,
@@ -129,9 +131,6 @@ def SearchButtonAction():
                         DataList.append((PARKPLC_NM, LOCPLC_LOTNO_ADDR, PARKNG_COMPRT_CNT, WKDAY_OPERT_BEGIN_TM,
                                          WKDAY_OPERT_END_TM, CHRG_INFO, CONTCT_NO, SPCLABLT_MATR, SETTLE_METH,
                                          REFINE_WGS84_LAT, REFINE_WGS84_LOGT))
-
-
-
 
     # 필터링된 주차장 정보 표시
     for i in range(len(DataList)):
@@ -168,6 +167,7 @@ def SearchButtonAction():
 
     RenderText.configure(state='disabled')
     update_map(city_name)
+
 
 def BookMarkButtonAction():
     global selected_parking_index
@@ -249,7 +249,7 @@ def InitRenderGraph():
 
     # 주차장 정보를 저장할 딕셔너리 초기화
     parking_dic = {city: 0 for city in ['양주', '수원', '안산', '오산', '의왕'
-        , '광명', '성남','부천','남양주','시흥','가평']}
+        , '광명', '성남', '부천', '남양주', '시흥', '가평']}
 
     # 파일에서 XML 데이터를 읽어옴
     tree = ET.parse('주차장정보현황.xml')
@@ -269,7 +269,8 @@ def InitRenderGraph():
                         parking_dic[city] += 1
 
     # 최대 주차장 개수 계산
-    max_count = max(parking_dic.values())
+    # max_count = max(parking_dic.values())
+    max_count = spam_max(parking_dic)
 
     # 그래프 영역 크기 계산
     graph_width = 280
@@ -313,7 +314,7 @@ def input_mailaddress():
     Button(newWindow, text="전송", command=submit_email, font=("Helvetica", 12)).pack(pady=20)
 
 
-def send_email(recipient):#++
+def send_email(recipient):  # ++
     global host, port, parking_palace_info, selected_parking_index
 
     title = str('주차장 위치 정보 메일 전달 시스템')
@@ -356,28 +357,32 @@ def send_email(recipient):#++
 
     print("Mail sending complete!!!")
 
-def mail_button():#++
+
+def mail_button():  # ++
     MailImage = PhotoImage(file="Gmail.png")  # 이미지 파일 경로 설정
     MailButton = Button(g_Tk, image=MailImage, command=input_mailaddress)
     MailButton.image = MailImage  # 이미지 참조 유지
     MailButton.pack()
     MailButton.place(x=125, y=500)
 
-def showBookMark_button():#++
+
+def showBookMark_button():  # ++
     BookMarkImage = PhotoImage(file="Bookmark.png")  # 이미지 파일 경로 설정
-    BookMarkButton = Button(g_Tk, image=BookMarkImage, command=showBookMark)#TODO : 즐겨찾기 액션
+    BookMarkButton = Button(g_Tk, image=BookMarkImage, command=showBookMark)  # TODO : 즐겨찾기 액션
     BookMarkButton.image = BookMarkImage  # 이미지 참조 유지
     BookMarkButton.pack()
     BookMarkButton.place(x=25, y=500)
 
-def addBookMark_button():#++
+
+def addBookMark_button():  # ++
     BookMarkImage = PhotoImage(file="BookmarkPlus.png")  # 이미지 파일 경로 설정
     BookMarkButton = Button(g_Tk, image=BookMarkImage, command=BookMarkButtonAction)  # TODO : 즐겨찾기 액션
     BookMarkButton.image = BookMarkImage  # 이미지 참조 유지
     BookMarkButton.pack()
-    BookMarkButton.place(x=240, y=300)
+    BookMarkButton.place(x=235, y=300)
 
-def showBookMark():#++
+
+def showBookMark():  # ++
     global RenderText, showBookmarksFlag
     RenderText.configure(state='normal')
     RenderText.delete(0.0, END)
@@ -434,7 +439,7 @@ InitSearchButton()
 InitRenderText()
 update_map('경기')
 InitRenderGraph()
-#메일 및 즐겨 찾기
+# 메일 및 즐겨 찾기
 mail_button()
 showBookMark_button()
 addBookMark_button()
