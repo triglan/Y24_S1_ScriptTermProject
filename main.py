@@ -7,7 +7,7 @@ from io import BytesIO
 from googlemaps import Client
 from tkinter import messagebox
 from spam import spam_max
-
+import subprocess
 # Tkinter 초기화
 g_Tk = Tk()
 g_Tk.geometry("800x600+100+100")
@@ -430,12 +430,24 @@ def showBookMark():  # ++
         showBookmarksFlag = True
 
     RenderText.configure(state='disabled')
+def InitTelegramButton():
+    TempFont = font.Font(g_Tk, size=15, weight='bold', family='Consolas')
+    TelegramButton = Button(g_Tk, font=TempFont, text="텔레그램 실행", command=RunTelegramBot)
+    TelegramButton.pack()
+    TelegramButton.place(x=600, y=90)
 
+def RunTelegramBot():
+    try:
+        subprocess.Popen(['python', 'teller.py'])  # 윈도우 환경이라면 이 라인 사용
+    except Exception as e:
+        print(f"텔레그램 봇 실행 중 오류 발생: {e}")
 
 # 초기화 함수 호출
 InitTopText()
 InitSearchEntry()
 InitSearchButton()
+InitTelegramButton()
+RunTelegramBot()
 InitRenderText()
 update_map('경기')
 InitRenderGraph()
